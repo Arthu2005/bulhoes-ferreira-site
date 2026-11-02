@@ -120,6 +120,14 @@
   } else {
     revealTargets.forEach(function (el) { el.classList.add('is-in'); });
   }
+  // Telas de toque não têm hover: o que acende ao passar o mouse acende ao chegar no meio da tela
+  if (hasIO && window.matchMedia('(hover: none)').matches) {
+    var litObs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) { entry.target.classList.toggle('is-lit', entry.isIntersecting); });
+    }, { rootMargin: '-38% 0px -38% 0px' });
+    document.querySelectorAll('.person, .partner, .bulletin-row').forEach(function (el) { litObs.observe(el); });
+  }
+
   // Depois que a foto dos sócios termina de revelar, a aproximação passa a seguir a rolagem
   setTimeout(function () { heroPhoto.classList.add('is-zooming'); requestUpdate(); }, 2600);
 
@@ -183,7 +191,7 @@
       overlay.querySelector('a').focus({ preventScroll: true });
     } else {
       overlay.classList.remove('is-open');
-      closeTimer = setTimeout(function () { overlay.hidden = true; }, reduceMotion ? 0 : 600);
+      closeTimer = setTimeout(function () { overlay.hidden = true; }, 600);
     }
     update();
   }
@@ -231,16 +239,17 @@
     sideLinks.forEach(function (a) { a.classList.toggle('is-active', a.dataset.for === midId); });
     navLinks.forEach(function (a) { a.classList.toggle('is-active', a.getAttribute('href') === '#' + midId); });
 
-    // Deslocamentos: só com movimento completo
+    // Cortina das seções escuras
+    curtains.forEach(function (sec) {
+      var top = sec.getBoundingClientRect().top;
+      var p = clamp((vh - top) / (vh * 0.9), 0, 1);
+      var e = p * p * (3 - 2 * p);
+      sec.style.setProperty('--cx', ((1 - e) * Math.min(window.innerWidth * 0.05, 56)).toFixed(2) + 'px');
+      sec.style.setProperty('--cr', ((1 - e) * 56).toFixed(2) + 'px');
+    });
+
+    // Movimentos contínuos: só com movimento completo
     if (!reduceMotion) {
-      // Cortina das seções escuras
-      curtains.forEach(function (sec) {
-        var top = sec.getBoundingClientRect().top;
-        var p = clamp((vh - top) / (vh * 0.9), 0, 1);
-        var e = p * p * (3 - 2 * p);
-        sec.style.setProperty('--cx', ((1 - e) * Math.min(window.innerWidth * 0.05, 56)).toFixed(2) + 'px');
-        sec.style.setProperty('--cr', ((1 - e) * 56).toFixed(2) + 'px');
-      });
       // Foto dos sócios: aproxima levemente conforme a rolagem
       if (heroPhoto.classList.contains('is-zooming') && y < vh * 1.5) {
         heroImg.style.setProperty('--zoom', (1 + clamp(y / vh, 0, 1) * 0.08).toFixed(4));
